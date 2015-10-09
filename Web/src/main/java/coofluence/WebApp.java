@@ -7,9 +7,6 @@ import spark.Spark;
 import static spark.Spark.get;
 import static spark.Spark.port;
 
-/**
- * Created by sdaclin on 09/10/2015.
- */
 public class WebApp {
     final static Logger logger = LoggerFactory.getLogger(WebApp.class);
 

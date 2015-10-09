@@ -12,9 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
-/**
- * Created by sdaclin on 07/10/2015.
- */
 public class Crawler {
     final static Logger logger = LoggerFactory.getLogger(Crawler.class);
 
@@ -41,12 +38,12 @@ public class Crawler {
         // Get list of pages
         HttpResponse<JsonNode> jsonNodeHttpResponse = null;
         try {
-            jsonNodeHttpResponse = Unirest.get(confluenceHttpRootUri + "/rest/api/content")
-                    .queryString("expand", "body.view,metadata,space").asJson();
+            jsonNodeHttpResponse = Unirest.get(confluenceHttpRootUri + "/rest/api/content")//
+                    .queryString("expand", "body.view,metadata,space,version")//
+                    .asJson();
         } catch (UnirestException e) {
             e.printStackTrace();
         }
-        logger.debug(String.valueOf(jsonNodeHttpResponse));
         JSONArray results = (JSONArray) jsonNodeHttpResponse.getBody().getObject().get("results");
         for (int i = 0; i < results.length(); i++) {
             JSONObject resultJson = results.getJSONObject(i);
@@ -58,6 +55,7 @@ public class Crawler {
             }
             String contentId = resultJson.getString("id");
             Page page = new Page(contentId);
+            logger.debug("Page [%s] crawled.",page.getTitle());
             page.setTitle(resultJson.getString("title"));
             page.setContent(resultJson.getJSONObject("body").getJSONObject("view").getString("value"));
             page.setSpace(resultJson.getJSONObject("space").getString("name"));

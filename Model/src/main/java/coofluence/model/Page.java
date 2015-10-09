@@ -3,9 +3,6 @@ package coofluence.model;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Created by sdaclin on 08/10/2015.
- */
 public class Page {
     private final String contentId;
     private String title;
