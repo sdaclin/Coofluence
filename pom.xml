@@ -12,7 +12,7 @@
         <module>crawler</module>
         <module>index</module>
         <module>model</module>
-        <module>Web</module>
+        <module>web</module>
     </modules>
 
     <dependencies>
