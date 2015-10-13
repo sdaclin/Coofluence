@@ -1,14 +1,11 @@
 package coofluence;
 
-import coofluence.crawler.Crawler;
 import coofluence.index.Index;
-import coofluence.model.ESConfig;
-import coofluence.model.Page;
-import coofluence.tools.CoofluenceProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Console;
+import java.time.LocalDateTime;
 
 public class Launcher {
     public static Logger logger = LoggerFactory.getLogger(Launcher.class);
@@ -17,21 +14,36 @@ public class Launcher {
         // Start ES index
         Index.start();
 
-        Index.deleteIndex();
+        if (args != null && args.length == 1 && args[0].equals("recreateIndex")) {
+            Index.deleteIndex();
+        }
 
-        // Read index refresh date
-        ESConfig ESConfig = Index.getOrInitESConfig();
+        // Init index if necessary
+        Index.initIndexIfNecessary();
+        LocalDateTime lastChangeDate = Index.getMaxUpdatedDate();
 
-        new Crawler(CoofluenceProperty.HTTP_ROOT_URI.getValue()) //
-                .withCredentials(CoofluenceProperty.USER_LOGIN.getValue(), CoofluenceProperty.USER_PASS.getValue()) //
-                .visit(ESConfig.getLastChangeDate(), indexable -> {
-                    switch (indexable.getType()) {
-                        case PAGE:
-                            Index.indexPage((Page) indexable);
-                            break;
-                    }
-                    return null;
-                });
+//        new Crawler(CoofluenceProperty.HTTP_ROOT_URI.getValue()) //
+//                .withCredentials(CoofluenceProperty.USER_LOGIN.getValue(), CoofluenceProperty.USER_PASS.getValue()) //
+//                .limitCrawlingTo(100)
+//                .visit(lastChangeDate, indexable -> {
+//                    switch (indexable.getType()) {
+//                        case PAGE:
+//                            final Page page = (Page) indexable;
+//                            Index.indexPage(page);
+//                            logger.info("Page indexed #{} [{}]", page.getId(), page.getTitle());
+//                            break;
+//                        case BLOG_POST:
+//                            final BlogPost blogPost = (BlogPost) indexable;
+//                            Index.indexBlogPost(blogPost);
+//                            logger.info("BlogPost indexed #{} [{}]", blogPost.getId(), blogPost.getTitle());
+//                            break;
+//                        case COMMENT: // TODO to be handled when indexing blog post and page
+//                            final Comment comment = (Comment) indexable;
+//                            Index.indexComment(comment);
+//                            logger.info("Comment indexed #{} [{}]", comment.getId(), comment.getTitle());
+//                    }
+//                    return null;
+//                });
 
         // Start Web app
         WebApp.start();

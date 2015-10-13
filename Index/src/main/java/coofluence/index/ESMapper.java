@@ -25,6 +25,22 @@ public class ESMapper {
     public static final String PAGE_AUTHOR_KEY = "authorKey";
     public static final String PAGE_SPACE = "space";
 
+    public static final String BLOG_POST_TITLE = "title";
+    public static final String BLOG_POST_UPDATE_DATE = "updateDate";
+    public static final String BLOG_POST_CONTENT = "content";
+    public static final String BLOG_POST_AUTHOR_DISPLAY_NAME = "authorDisplayName";
+    public static final String BLOG_POST_AUTHOR_USER_NAME = "authorUserName";
+    public static final String BLOG_POST_TAGS = "tags";
+    public static final String BLOG_POST_AUTHOR_KEY = "authorKey";
+    public static final String BLOG_POST_SPACE = "space";
+
+    public static final String COMMENT_TITLE = "title";
+    public static final String COMMENT_CONTENT = "content";
+    public static final String COMMENT_UPDATE_DATE = "updateDate";
+    public static final String COMMENT_AUTHOR_USER_NAME = "authorUserName";
+    public static final String COMMENT_AUTHOR_DISPLAY_NAME = "authorDisplayName";
+    public static final String COMMENT_AUTHOR_KEY = "authorKey";
+
     public static ESConfig toConfig(GetResponse response) {
         final ESConfig esConfig = new ESConfig();
         esConfig.setLastChangeDate(LocalDateTime.parse((String) response.getSource().get("lastChangeDate"), ISO_DATE_TIME));

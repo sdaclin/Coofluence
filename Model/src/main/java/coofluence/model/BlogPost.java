@@ -4,10 +4,10 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Page implements Indexable {
+public class BlogPost implements Indexable {
     @Override
     public Type getType() {
-        return Type.PAGE;
+        return Type.BLOG_POST;
     }
 
     private final String id;
@@ -21,7 +21,7 @@ public class Page implements Indexable {
     private String space;
     private Set<String> tags = new HashSet<>();
 
-    public Page(String id) {
+    public BlogPost(String id) {
         this.id = id;
     }
 

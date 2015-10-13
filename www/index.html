@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Coofluence - beta</title>
+
+    <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style type="text/css">
+        #multiple-datasets .league-name {
+            margin: 0 20px 5px 20px;
+            padding: 3px 0;
+            border-bottom: 1px solid #ccc;
+        }
+
+        /*.typeahead,*/
+        /*.tt-query,*/
+        /*.tt-hint {*/
+        /*/!*height: 30px;*!/*/
+        /*padding: 8px 12px;*/
+        /*font-size: 24px;*/
+        /*line-height: 30px;*/
+        /*border: 2px solid #ccc;*/
+        /*-webkit-border-radius: 8px;*/
+        /*-moz-border-radius: 8px;*/
+        /*border-radius: 8px;*/
+        /*outline: none;*/
+        /*}*/
+
+        .twitter-typeahead {
+            display: block !important;
+        }
+
+        .typeahead {
+            background-color: #fff;
+        }
+
+        /*.typeahead:focus {*/
+        /*border: 2px solid #0097cf;*/
+        /*}*/
+
+        /*.tt-query {*/
+        /*-webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);*/
+        /*-moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);*/
+        /*box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);*/
+        /*}*/
+
+        /*.tt-hint {*/
+        /*color: #999*/
+        /*}*/
+
+        .tt-menu {
+            width: 100%;
+            margin: 12px 0;
+            padding: 8px 0;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            -webkit-border-radius: 8px;
+            -moz-border-radius: 8px;
+            border-radius: 8px;
+            -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+            -moz-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+        }
+
+        .tt-suggestion {
+            padding: 3px 20px;
+            font-size: 16px;
+            line-height: 20px;
+        }
+
+        /*.tt-suggestion:hover {*/
+        /*cursor: pointer;*/
+        /*color: #fff;*/
+        /*background-color: #0097cf;*/
+        /*}*/
+
+        /*.tt-suggestion.tt-cursor {*/
+        /*color: #fff;*/
+        /*background-color: #0097cf;*/
+
+        /*}*/
+
+        /*.tt-suggestion p {*/
+        /*margin: 0;*/
+        /*}*/
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header clearfix">
+        <nav>
+            <ul class="nav nav-pills pull-right">
+                <li role="presentation" class="active"><a href="#">Home</a></li>
+                <li role="presentation"><a href="#">About</a></li>
+                <li role="presentation"><a href="#">Contact</a></li>
+            </ul>
+        </nav>
+        <h1>Coofluence</h1>
+    </div>
+
+
+    <div class="jumbotron">
+        <h1>Start searching confluence</h1>
+
+        <div id="multiple-datasets" class="form-group">
+            <input class="typeahead" type="search" placeholder="Search on coofluence..."/>
+        </div>
+    </div>
+
+    <div class="row marketing">
+        <div class="col-lg-6">
+            <h4>Subheading</h4>
+
+            <p>Donec id elit non mi porta gravida at eget metus. Maecenas faucibus mollis interdum.</p>
+
+            <h4>Subheading</h4>
+
+            <p>Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis consectetur purus sit amet fermentum.</p>
+
+            <h4>Subheading</h4>
+
+            <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
+        </div>
+
+        <div class="col-lg-6">
+            <h4>Subheading</h4>
+
+            <p>Donec id elit non mi porta gravida at eget metus. Maecenas faucibus mollis interdum.</p>
+
+            <h4>Subheading</h4>
+
+            <p>Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis consectetur purus sit amet fermentum.</p>
+
+            <h4>Subheading</h4>
+
+            <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© Company 2014</p>
+    </footer>
+
+</div>
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="bower_components/handlebars/handlebars.min.js"></script>
+
+<script src="bower_components/typeahead.js/dist/typeahead.bundle.min.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "coofluence",
+  "version": "0.0.0",
+  "homepage": "https://github.com/sdaclin/Coofluence",
+  "description": "Web app for coofluence search engine",
+  "main": "js/main.js",
+  "authors": [
+    "sdaclin"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "typeahead.js": "~0.11.1",
+    "jQuery": "~2.1.4",
+    "bootstrap": "~3.3.5",
+    "handlebars": "~4.0.3"
+  }
+}
