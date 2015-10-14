@@ -21,9 +21,19 @@ var coofluence = {
                 },
                 highlight: true
             },
+            //{
+            //    name: 'coofluence',
+            //    display:"title",
+            //    source: function(query,syncResults,asyncResults){
+            //        syncResults([{query:query}]);
+            //        console.log(query);
+            //    },
+            //    templates: {
+            //        suggestion:Handlebars.compile('<div><a href="#query={{query}}">Search {{query}}</a></div>')
+            //    }
+            //},
             {
-                name: 'nba-teams',
-                //display: 'team',
+                name: 'pages',
                 display: "title",
                 source: nbaTeams,
                 templates: {
@@ -35,8 +45,7 @@ var coofluence = {
                 }
             },
             {
-                name: 'nhl-teams',
-                //display: 'team',
+                name: 'blogPosts',
                 display: "title",
                 source: nhlTeams,
                 templates: {

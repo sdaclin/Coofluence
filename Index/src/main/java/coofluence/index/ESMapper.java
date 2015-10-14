@@ -41,6 +41,8 @@ public class ESMapper {
     public static final String COMMENT_AUTHOR_DISPLAY_NAME = "authorDisplayName";
     public static final String COMMENT_AUTHOR_KEY = "authorKey";
 
+    public static final String ES_SUGGEST = "suggest";
+
     public static ESConfig toConfig(GetResponse response) {
         final ESConfig esConfig = new ESConfig();
         esConfig.setLastChangeDate(LocalDateTime.parse((String) response.getSource().get("lastChangeDate"), ISO_DATE_TIME));

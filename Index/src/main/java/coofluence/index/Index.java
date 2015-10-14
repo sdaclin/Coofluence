@@ -152,6 +152,12 @@ public class Index {
                                     .startObject(ESMapper.PAGE_CONTENT).field("type", "string").field("analyzer", ANALYZER_HTML).endObject()
                                     .startObject(ESMapper.PAGE_SPACE).field("type", "string").endObject()
                                     .startObject(ESMapper.PAGE_TAGS).field("type", "string").endObject()
+                                    .startObject(ESMapper.ES_SUGGEST)
+                                    .field("type", "completion")
+                                    .field("index_analyzer", "simple")
+                                    .field("search_analyzer", "simple")
+                                    .field("payloads", true)
+                                    .endObject()
                                     .endObject()
 
                     ).execute().actionGet();
@@ -169,6 +175,12 @@ public class Index {
                                     .startObject(ESMapper.BLOG_POST_CONTENT).field("type", "string").field("analyzer", ANALYZER_HTML).endObject()
                                     .startObject(ESMapper.BLOG_POST_SPACE).field("type", "string").endObject()
                                     .startObject(ESMapper.BLOG_POST_TAGS).field("type", "string").endObject()
+                                    .startObject(ESMapper.ES_SUGGEST)
+                                    .field("type", "completion")
+                                    .field("index_analyzer", "simple")
+                                    .field("search_analyzer", "simple")
+                                    .field("payloads", true)
+                                    .endObject()
                                     .endObject()
 
                     ).execute().actionGet();
@@ -211,6 +223,11 @@ public class Index {
                                     .field(ESMapper.PAGE_AUTHOR_KEY, page.getAuthor().getAuthorKey())
                                     .field(ESMapper.PAGE_SPACE, page.getSpace())
                                     .field(ESMapper.PAGE_TAGS, page.getTags())
+                                    .startObject(ESMapper.ES_SUGGEST)
+                                    .field("input", page.getTitle())
+                                    .field("payload",
+                                            jsonBuilder().startObject().field("type", "page").field("id", page.getId()).endObject())
+                                    .endObject()
                                     .endObject())
                     .execute().actionGet();
             if (!indexResponse.isCreated()) {
@@ -221,26 +238,31 @@ public class Index {
         }
     }
 
-    public static void indexBlogPost(BlogPost page) {
+    public static void indexBlogPost(BlogPost blogPost) {
         try {
-            final IndexResponse indexResponse = client.prepareIndex(ES_IDX, ES_TYPE_BLOG_POST, page.getId())
+            final IndexResponse indexResponse = client.prepareIndex(ES_IDX, ES_TYPE_BLOG_POST, blogPost.getId())
                     .setSource(
                             jsonBuilder().startObject()
-                                    .field(ESMapper.PAGE_TITLE, page.getTitle())
-                                    .field(ESMapper.PAGE_CONTENT, page.getContent())
-                                    .field(ESMapper.PAGE_UPDATE_DATE, page.getUpdateDate())
-                                    .field(ESMapper.PAGE_AUTHOR_DISPLAY_NAME, page.getAuthor().getAuthorDisplayName())
-                                    .field(ESMapper.PAGE_AUTHOR_USER_NAME, page.getAuthor().getAuthorUserName())
-                                    .field(ESMapper.PAGE_AUTHOR_KEY, page.getAuthor().getAuthorKey())
-                                    .field(ESMapper.PAGE_SPACE, page.getSpace())
-                                    .field(ESMapper.PAGE_TAGS, page.getTags())
+                                    .field(ESMapper.BLOG_POST_TITLE, blogPost.getTitle())
+                                    .field(ESMapper.BLOG_POST_CONTENT, blogPost.getContent())
+                                    .field(ESMapper.BLOG_POST_UPDATE_DATE, blogPost.getUpdateDate())
+                                    .field(ESMapper.BLOG_POST_AUTHOR_DISPLAY_NAME, blogPost.getAuthor().getAuthorDisplayName())
+                                    .field(ESMapper.BLOG_POST_AUTHOR_USER_NAME, blogPost.getAuthor().getAuthorUserName())
+                                    .field(ESMapper.BLOG_POST_AUTHOR_KEY, blogPost.getAuthor().getAuthorKey())
+                                    .field(ESMapper.BLOG_POST_SPACE, blogPost.getSpace())
+                                    .field(ESMapper.BLOG_POST_TAGS, blogPost.getTags())
+                                    .startObject(ESMapper.ES_SUGGEST)
+                                    .field("input", blogPost.getTitle())
+                                    .field("payload",
+                                            jsonBuilder().startObject().field("type", "blogPost").field("id", blogPost.getId()).endObject())
+                                    .endObject()
                                     .endObject())
                     .execute().actionGet();
             if (!indexResponse.isCreated()) {
                 throw new IllegalStateException();
             }
         } catch (IOException | IllegalStateException e) {
-            throw new RuntimeException("Problem during indexation of page [" + page.getId() + "]", e);
+            throw new RuntimeException("Problem during indexation of blogPost [" + blogPost.getId() + "]", e);
         }
     }
 
