@@ -1,26 +1,35 @@
 package coofluence.index;
 
 import com.google.common.base.Throwables;
-import coofluence.model.BlogPost;
-import coofluence.model.Comment;
-import coofluence.model.Page;
+import coofluence.model.*;
+import coofluence.tools.CoofluenceProperty;
 import org.elasticsearch.action.exists.ExistsResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.action.suggest.SuggestRequestBuilder;
+import org.elasticsearch.action.suggest.SuggestResponse;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.search.suggest.Suggest;
+import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
+import org.elasticsearch.search.suggest.completion.CompletionSuggestionBuilder;
+import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -36,6 +45,7 @@ public class Index {
 
     private static final String MAPPING_PROPERTIES = "properties";
     private static final String ANALYZER_HTML = "htmlAnalyzer";
+    private static final int CONTENT_PREVIEW_SIZE = 450;
     private static Node esNode;
     private static Client client;
 
@@ -152,12 +162,18 @@ public class Index {
                                     .startObject(ESMapper.PAGE_CONTENT).field("type", "string").field("analyzer", ANALYZER_HTML).endObject()
                                     .startObject(ESMapper.PAGE_SPACE).field("type", "string").endObject()
                                     .startObject(ESMapper.PAGE_TAGS).field("type", "string").endObject()
-                                    .startObject(ESMapper.ES_SUGGEST)
+                                    .startObject(ESMapper.ES_PAGE_SUGGEST)
                                     .field("type", "completion")
-                                    .field("index_analyzer", "simple")
-                                    .field("search_analyzer", "simple")
+                                    .field("index_analyzer", ANALYZER_HTML)
+                                    .field("search_analyzer", ANALYZER_HTML)
                                     .field("payloads", true)
                                     .endObject()
+//                                    .startObject(ESMapper.ES_TAG_SUGGEST)
+//                                    .field("type", "completion")
+//                                    .field("index_analyzer", ANALYZER_HTML)
+//                                    .field("search_analyzer", ANALYZER_HTML)
+//                                    .field("payloads", true)
+//                                    .endObject()
                                     .endObject()
 
                     ).execute().actionGet();
@@ -175,12 +191,18 @@ public class Index {
                                     .startObject(ESMapper.BLOG_POST_CONTENT).field("type", "string").field("analyzer", ANALYZER_HTML).endObject()
                                     .startObject(ESMapper.BLOG_POST_SPACE).field("type", "string").endObject()
                                     .startObject(ESMapper.BLOG_POST_TAGS).field("type", "string").endObject()
-                                    .startObject(ESMapper.ES_SUGGEST)
+                                    .startObject(ESMapper.ES_BLOG_POST_SUGGEST)
                                     .field("type", "completion")
-                                    .field("index_analyzer", "simple")
-                                    .field("search_analyzer", "simple")
+                                    .field("index_analyzer", ANALYZER_HTML)
+                                    .field("search_analyzer", ANALYZER_HTML)
                                     .field("payloads", true)
                                     .endObject()
+//                                    .startObject(ESMapper.ES_TAG_SUGGEST)
+//                                    .field("type", "completion")
+//                                    .field("index_analyzer", ANALYZER_HTML)
+//                                    .field("search_analyzer", ANALYZER_HTML)
+//                                    .field("payloads", true)
+//                                    .endObject()
                                     .endObject()
 
                     ).execute().actionGet();
@@ -202,12 +224,6 @@ public class Index {
         } catch (IOException e) {
             Throwables.propagate(e);
         }
-
-        /*ESConfig esConfig = new ESConfig();
-        esConfig.setLastChangeDate(LocalDateTime.of(1980, Month.JANUARY, 1, 0, 0));
-
-        client.prepareIndex(ES_IDX, ES_TYPE_CONFIG, "1").setSource(ESMapper.toJson(esConfig)).execute().actionGet();
-        return esConfig;*/
     }
 
     public static void indexPage(Page page) {
@@ -216,17 +232,16 @@ public class Index {
                     .setSource(
                             jsonBuilder().startObject()
                                     .field(ESMapper.PAGE_TITLE, page.getTitle())
-                                    .field(ESMapper.PAGE_CONTENT, page.getContent())
+                                    .field(ESMapper.PAGE_CONTENT, Jsoup.parse(page.getContent()).text())
                                     .field(ESMapper.PAGE_UPDATE_DATE, page.getUpdateDate())
                                     .field(ESMapper.PAGE_AUTHOR_DISPLAY_NAME, page.getAuthor().getAuthorDisplayName())
                                     .field(ESMapper.PAGE_AUTHOR_USER_NAME, page.getAuthor().getAuthorUserName())
                                     .field(ESMapper.PAGE_AUTHOR_KEY, page.getAuthor().getAuthorKey())
                                     .field(ESMapper.PAGE_SPACE, page.getSpace())
                                     .field(ESMapper.PAGE_TAGS, page.getTags())
-                                    .startObject(ESMapper.ES_SUGGEST)
+                                    .startObject(ESMapper.ES_PAGE_SUGGEST)
                                     .field("input", page.getTitle())
-                                    .field("payload",
-                                            jsonBuilder().startObject().field("type", "page").field("id", page.getId()).endObject())
+                                    .field("payload", CoofluenceProperty.HTTP_ROOT_URI.getValue() + "/pages/viewpage.action?pageId=" + page.getId())
                                     .endObject()
                                     .endObject())
                     .execute().actionGet();
@@ -244,17 +259,17 @@ public class Index {
                     .setSource(
                             jsonBuilder().startObject()
                                     .field(ESMapper.BLOG_POST_TITLE, blogPost.getTitle())
-                                    .field(ESMapper.BLOG_POST_CONTENT, blogPost.getContent())
+                                    .field(ESMapper.BLOG_POST_CONTENT, Jsoup.parse(blogPost.getContent()).text())
                                     .field(ESMapper.BLOG_POST_UPDATE_DATE, blogPost.getUpdateDate())
                                     .field(ESMapper.BLOG_POST_AUTHOR_DISPLAY_NAME, blogPost.getAuthor().getAuthorDisplayName())
                                     .field(ESMapper.BLOG_POST_AUTHOR_USER_NAME, blogPost.getAuthor().getAuthorUserName())
                                     .field(ESMapper.BLOG_POST_AUTHOR_KEY, blogPost.getAuthor().getAuthorKey())
                                     .field(ESMapper.BLOG_POST_SPACE, blogPost.getSpace())
                                     .field(ESMapper.BLOG_POST_TAGS, blogPost.getTags())
-                                    .startObject(ESMapper.ES_SUGGEST)
+                                    .startObject(ESMapper.ES_BLOG_POST_SUGGEST)
                                     .field("input", blogPost.getTitle())
                                     .field("payload",
-                                            jsonBuilder().startObject().field("type", "blogPost").field("id", blogPost.getId()).endObject())
+                                            CoofluenceProperty.HTTP_ROOT_URI.getValue() + "/pages/viewpage.action?pageId=" + blogPost.getId())
                                     .endObject()
                                     .endObject())
                     .execute().actionGet();
@@ -285,12 +300,8 @@ public class Index {
             if (!updateResponse.isCreated()) {
                 throw new IllegalStateException();
             }
-        } catch (IllegalStateException e) {
-            throw new RuntimeException("Problem during indexation of page [" + comment.getId() + "]", e);
-        } catch (IOException e) {
-            e.printStackTrace();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException("Problem during indexation of page [" + comment.getId() + "]", e);
         }
     }
 
@@ -301,5 +312,73 @@ public class Index {
         } else {
             return LocalDateTime.of(1980, Month.JANUARY, 1, 0, 0);
         }
+    }
+
+    /**
+     * Autocomplete the query q parameter
+     * Need to be able to suggests by the middle of the word
+     *
+     * @param type
+     * @param q
+     * @return
+     */
+    public static List<Suggestion> getSuggestion(String type, String q) {
+        final SuggestRequestBuilder suggestRequestBuilder = client.prepareSuggest(ES_IDX);
+
+        if (type.equals("page")) {
+            suggestRequestBuilder.addSuggestion(new CompletionSuggestionBuilder("completeSuggestion").text(q).field(ESMapper.ES_PAGE_SUGGEST));
+        } else if (type.equals("blogPost")) {
+            suggestRequestBuilder.addSuggestion(new CompletionSuggestionBuilder("completeSuggestion").text(q).field(ESMapper.ES_BLOG_POST_SUGGEST));
+        }
+        final SuggestResponse completeMe = suggestRequestBuilder.execute().actionGet();
+
+
+        List<Suggestion> suggestions = new ArrayList<>();
+        for (Suggest.Suggestion.Entry.Option me : completeMe.getSuggest().getSuggestion("completeSuggestion").getEntries().get(0).getOptions()) {
+            final CompletionSuggestion.Entry.Option esSuggestion = (CompletionSuggestion.Entry.Option) me;
+            suggestions.add(new Suggestion(esSuggestion.getText().string(), esSuggestion.getPayloadAsString()));
+        }
+        return suggestions;
+    }
+
+    /**
+     * Finds results in ES for the query q
+     *
+     * @param q
+     * @return
+     */
+    public static List<Result> getSearchResult(String q) {
+        final SearchResponse usualSearch = client.prepareSearch(ES_IDX).setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+                .setTypes(ES_TYPE_PAGE, ES_TYPE_BLOG_POST)
+                .setQuery(QueryBuilders
+                        .queryStringQuery(q)
+                        .field(ESMapper.PAGE_TITLE)
+                        .field(ESMapper.PAGE_CONTENT))
+                .addHighlightedField(ESMapper.PAGE_CONTENT, CONTENT_PREVIEW_SIZE)
+                .addFields(ESMapper.PAGE_TITLE, ESMapper.PAGE_CONTENT, ESMapper.PAGE_AUTHOR_DISPLAY_NAME, ESMapper.PAGE_UPDATE_DATE)
+                .setFrom(0)
+                .setSize(20)
+                .execute().actionGet();
+        List<Result> results = new ArrayList<>();
+        for (SearchHit searchHitFields : usualSearch.getHits()) {
+            String content;
+            if (searchHitFields.highlightFields().containsKey("content")) {
+                content = searchHitFields.highlightFields().get("content").getFragments()[0].string();
+            } else {
+                String rawContent = (String) searchHitFields.field(ESMapper.PAGE_CONTENT).value();
+                if (rawContent.length() < CONTENT_PREVIEW_SIZE) {
+                    content = rawContent;
+                } else {
+                    content = rawContent.substring(0, CONTENT_PREVIEW_SIZE);
+                }
+            }
+            results.add(new Result(
+                    searchHitFields.field(ESMapper.PAGE_TITLE).value(),
+                    searchHitFields.field(ESMapper.PAGE_AUTHOR_DISPLAY_NAME).value(),
+                    content,
+                    searchHitFields.field(ESMapper.PAGE_UPDATE_DATE).value()));
+        }
+
+        return results;
     }
 }

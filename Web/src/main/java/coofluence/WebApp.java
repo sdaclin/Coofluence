@@ -1,31 +1,57 @@
 package coofluence;
 
 import com.google.gson.Gson;
+import coofluence.index.Index;
+import coofluence.model.Suggestion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
+import spark.Route;
 import spark.Spark;
 
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static spark.Spark.*;
 
 public class WebApp {
     final static Logger logger = LoggerFactory.getLogger(WebApp.class);
 
-    public static void start(){
+    public static void start() {
         Gson gson = new Gson();
 
         port(8080);
         //externalStaticFileLocation("www");
         enableCORS("*", "*", "*");
-        get("/rest/autoComplete", "application/json", (req, res) -> {
-            res.header("Content-type", "application/json");
-            return Arrays.asList(new PageJson("Truc bidule", "2015-01-12", "Plip, Ploum", "sdaclin"), new PageJson("Blah blah", "2015-01-12", "Plip, Ploum", "sdaclin"), new PageJson("Machin chouette", "2015-01-12", "Plip, Ploum", "smendez"));
+
+        get("/rest/autoComplete", "application/json", new Route() {
+            @Override
+            public Object handle(Request request, Response response) throws Exception {
+                response.header("Content-type", "application/json");
+                if (request.queryParams("q") == null) {
+                    // Prefetch mode
+                    return Collections.emptyList();
+                } else {
+                    final List<Suggestion> suggestions = Index.getSuggestion(request.queryParams("type"), request.queryParams("q"));
+                    return suggestions;
+                }
+            }
         }, gson::toJson);
+
+        get("/rest/search", "application/json", new Route() {
+
+            @Override
+            public Object handle(Request request, Response response) throws Exception {
+                response.header("Content-type", "application/json");
+                return Index.getSearchResult(request.queryParams("q"));
+            }
+        }, gson::toJson);
+
         logger.info("Spark Fwk started");
     }
 
-    public static void stop(){
+    public static void stop() {
         Spark.stop();
     }
 
@@ -35,19 +61,5 @@ public class WebApp {
             response.header("Access-Control-Request-Method", methods);
             response.header("Access-Control-Allow-Headers", headers);
         });
-    }
-
-    private static class PageJson {
-        private final String title;
-        private final String date;
-        private final String tags;
-        private final String author;
-
-        private PageJson(String title, String date, String tags, String author) {
-            this.title = title;
-            this.date = date;
-            this.tags = tags;
-            this.author = author;
-        }
     }
 }

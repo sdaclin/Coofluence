@@ -26,6 +26,7 @@ public class Launcher {
         // Init index if necessary
         Index.initIndexIfNecessary();
         LocalDateTime lastChangeDate = Index.getMaxUpdatedDate();
+        //lastChangeDate = LocalDateTime.of(2015, Month.JANUARY,1,0,0);
 
         new Crawler(CoofluenceProperty.HTTP_ROOT_URI.getValue()) //
                 .withCredentials(CoofluenceProperty.USER_LOGIN.getValue(), CoofluenceProperty.USER_PASS.getValue()) //

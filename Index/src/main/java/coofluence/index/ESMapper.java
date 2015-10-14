@@ -41,7 +41,9 @@ public class ESMapper {
     public static final String COMMENT_AUTHOR_DISPLAY_NAME = "authorDisplayName";
     public static final String COMMENT_AUTHOR_KEY = "authorKey";
 
-    public static final String ES_SUGGEST = "suggest";
+    public static final String ES_PAGE_SUGGEST = "pageSuggest";
+    public static final String ES_BLOG_POST_SUGGEST = "blogPostSuggest";
+    public static final String ES_TAG_SUGGEST = "tagSuggest";
 
     public static ESConfig toConfig(GetResponse response) {
         final ESConfig esConfig = new ESConfig();
