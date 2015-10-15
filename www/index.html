@@ -7,88 +7,91 @@
 
     <title>Coofluence - beta</title>
 
+    <link rel="stylesheet" href="bower_components/angular/angular-csp.css">
     <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="bower_components/angular-bootstrap/ui-bootstrap-csp.css">
     <style>
-        .twitter-typeahead {
-            display: block !important;
+        .typeahead-demo .custom-popup-wrapper {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 1000;
+            display: none;
+            background-color: #f9f9f9;
         }
 
-        .typeahead {
-            background-color: #fff;
+        .typeahead-demo .custom-popup-wrapper > .message {
+            padding: 10px 20px;
+            border-bottom: 1px solid #ddd;
+            color: #868686;
         }
 
-        .tt-menu {
-            width: 100%;
-            margin: 12px 0;
-            padding: 8px 0;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            -webkit-border-radius: 8px;
-            -moz-border-radius: 8px;
-            border-radius: 8px;
-            -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
-            -moz-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
-            box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+        .typeahead-demo .custom-popup-wrapper > .dropdown-menu {
+            position: static;
+            float: none;
+            display: block;
+            min-width: 160px;
+            background-color: transparent;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
         }
 
-        .tt-suggestion {
-            padding: 3px 20px;
-            font-size: 16px;
-            line-height: 20px;
-        }
-
-        .coofluenceResults em {
-            background-color: yellow;
-        }
-
-        .animate-hide {
-            transition: all linear 0.5s;
-            opacity: 1;
-            line-height: 1.1;
-        }
-
-        .animate-hide.ng-hide {
-            opacity: 0;
-            padding: 0 10px;
-            line-height: 0;
+        .searchResults em {
+            background-color: #337ab7;
+            color: white;
         }
     </style>
 
-
+    <script type="text/ng-template" id="customTemplate.html">
+        <a ng-href="{{match.model.payload}}">
+            <span ng-bind-html="match.label | uibTypeaheadHighlight:query"></span>
+        </a>
+    </script>
 </head>
 <body>
 <div class="container" ng-controller="AppCtrl">
     <div class="header clearfix">
-        <!--nav>
-            <ul class="nav nav-pills pull-right">
-                <li role="presentation" class="active"><a href="#">Home</a></li>
-                <li role="presentation"><a href="#">About</a></li>
-            </ul>
-        </nav-->
         <div><img src="img/coofluence.png" alt="Coofluence logo"></div>
     </div>
 
+    <div class="row" class="ng-cloak">
+        <div class="jumbotron" ng-controller="TypeaheadCtrl">
+            <h2>Start searching confluence</h2>
+            <input type="text" ng-model="searchQuery.value" placeholder="Your search..."
+                   uib-typeahead="suggestion as suggestion.label for suggestion in getLocation($viewValue)"
+                   typeahead-loading="loadingLocations" typeahead-wait-ms="250" class="form-control"
+                   typeahead-template-url="customTemplate.html">
+            <i ng-show="loadingLocations" class="glyphicon glyphicon-refresh"></i>
 
-    <div class="jumbotron">
-        <h1 ng-hide="results.content.length>0" class="animate-hide">Start searching confluence</h1>
-
-        <div class='container-fluid typeahead-demo' ng-controller="TypeaheadCtrl">
-            <div class="form-group">
-
-                <h4>Custom templates for results</h4>
-
-                <input type="text" class="sfTypeahead form-control" options="typeaheadOptions" datasets="pageAndBlogPostDataset" ng-model="searchQuery.value">
+            <div class="pull-right small" ng-show="results.content">{{results.content.totalHits}} hits in {{results.content.tookInMillis}} millis with a max
+                score of {{results.content.maxScore}}
             </div>
         </div>
     </div>
 
-    <div class="row marketing coofluenceResults" ng_controller="ResultCtrl">
-        <div class="col-lg-12" ng-repeat="result in results.content">
-            <span class="pull-right">{{result.author}}</span>
-            <h4><a ng-href="{{result.link}}">{{result.title}}</a></h4>
 
-            <p ng-bind-html="result.content | sanitize"></p>
+    <div class="row ng-cloak" ng-controller="ResultCtrl">
+
+        <div class="panel panel-default" ng-repeat="result in results.content.results">
+            <div class="panel-heading">
+                <div class="pull-right text-right text-info">{{result.author}}<br/>{{result.date | date : format : timezone}}</div>
+                <h4><a ng-href="{{result.link}}">{{result.title}}</a>
+                    <small>[{{result.space}}]</small>
+                </h4>
+            </div>
+            <div class="panel-body">
+                <div class="col-lg-12">
+                    <p class="searchResults" ng-bind-html="result.content | sanitize"></p>
+                </div>
+                <div class="col-lg-12">
+                    <div class="pull-right">
+                        <p>
+                            <span ng-repeat="tag in result.tags"><span class="badge">{{tag}}</span> </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -96,16 +99,18 @@
     </footer>
 
 </div>
-<script src="bower_components/jquery/dist/jquery.min.js"></script>
-<script src="bower_components/typeahead.js/dist/typeahead.bundle.min.js"></script>
-<script src="bower_components/handlebars/handlebars.min.js"></script>
+<!--For production-->
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-resource.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.14.2/ui-bootstrap.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.14.2/ui-bootstrap-tpls.js"></script>
 
-<script src="bower_components/angular/angular.min.js"></script>
-<script src="bower_components/angular-animate/angular-animate.min.js"></script>
-<script src="bower_components/angular-resource/angular-resource.min.js"></script>
-<script src="bower_components/angular-route/angular-route.min.js"></script>
-<script src="bower_components/angular-bootstrap/ui-bootstrap.min.js"></script>
-<script src="bower_components/angular-typeahead/angular-typeahead.min.js"></script>
+<!--For local dev-->
+<!--<script src="bower_components/angular/angular.min.js"></script>-->
+<!--<script src="bower_components/angular-resource/angular-resource.min.js"></script>-->
+<!--<script src="bower_components/angular-bootstrap/ui-bootstrap.js"></script>-->
+<!--<script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>-->
+
 <script src="js/main.js"></script>
 </body>
 </html>

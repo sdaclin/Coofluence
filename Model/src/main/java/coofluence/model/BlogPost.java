@@ -10,6 +10,11 @@ public class BlogPost implements Indexable {
         return Type.BLOG_POST;
     }
 
+    @Override
+    public String getAuthorUserName() {
+        return author.getAuthorUserName();
+    }
+
     private final String id;
 
     private LocalDateTime updateDate;

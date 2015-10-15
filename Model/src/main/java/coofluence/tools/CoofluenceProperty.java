@@ -10,6 +10,7 @@ import java.util.Properties;
 public enum CoofluenceProperty {
     HTTP_ROOT_URI,
     HTTP_VIEW_PAGE_PATH,
+    CONFLUENCE_POLLING_FREQUENCY_SECONDS,
     USER_LOGIN,
     USER_PASS;
 

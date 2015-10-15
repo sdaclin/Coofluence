@@ -10,6 +10,11 @@ public class Page implements Indexable {
         return Type.PAGE;
     }
 
+    @Override
+    public String getAuthorUserName() {
+        return author.getAuthorUserName();
+    }
+
     private final String id;
 
     private LocalDateTime updateDate;

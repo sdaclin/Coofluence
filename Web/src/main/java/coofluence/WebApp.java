@@ -22,7 +22,7 @@ public class WebApp {
         Gson gson = new Gson();
 
         port(8080);
-        //externalStaticFileLocation("www");
+//        externalStaticFileLocation("www");
         enableCORS("*", "*", "*");
 
         get("/rest/autoComplete", "application/json", new Route() {

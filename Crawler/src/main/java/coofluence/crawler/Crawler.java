@@ -6,6 +6,7 @@ import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import coofluence.model.*;
+import coofluence.tools.CoofluenceProperty;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -66,14 +67,16 @@ public class Crawler {
                 do {
                     // Query current page
                     try {
+
                         jsonNodeHttpResponse = Unirest.get(confluenceHttpRootUri + "/rest/api/content/search")//
-                                .queryString("cql", "type not in (comment,attachment) and lastmodified>" + threadRefreshDate.format(DateTimeFormatter.ISO_DATE) + " order by lastmodified asc")
+                                .queryString("cql", "type not in (comment,attachment) and lastmodified>\"" + threadRefreshDate.minusMinutes(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "\" order by lastmodified asc")
                                 .queryString("expand", "body.view,metadata,space,version")//
                                 .queryString("start", currentPage * CONFULENCE_REST_QUERY_LIMIT)
                                 .queryString("limit", CONFULENCE_REST_QUERY_LIMIT)
                                 .asJson();
                     } catch (UnirestException e) {
-                        e.printStackTrace();
+                        logger.error("Something goes wrong when querying confluence REST API [{}]", e.getMessage());
+                        return;
                     }
 
                     assert jsonNodeHttpResponse != null;
@@ -110,7 +113,7 @@ public class Crawler {
                 logger.info("End of indexation batch");
             }
         };
-        scheduler.scheduleWithFixedDelay(indexerTask, 0, 5, TimeUnit.SECONDS);
+        scheduler.scheduleWithFixedDelay(indexerTask, 0, Long.valueOf(CoofluenceProperty.CONFLUENCE_POLLING_FREQUENCY_SECONDS.getValue()), TimeUnit.SECONDS);
 
     }
 

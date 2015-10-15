@@ -10,6 +10,11 @@ public class Comment implements Indexable {
         return Type.COMMENT;
     }
 
+    @Override
+    public String getAuthorUserName() {
+        return author.getAuthorUserName();
+    }
+
     public Comment(String id) {
         this.id = id;
     }
