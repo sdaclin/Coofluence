@@ -41,6 +41,18 @@
         .coofluenceResults em {
             background-color: yellow;
         }
+
+        .animate-hide {
+            transition: all linear 0.5s;
+            opacity: 1;
+            line-height: 1.1;
+        }
+
+        .animate-hide.ng-hide {
+            opacity: 0;
+            padding: 0 10px;
+            line-height: 0;
+        }
     </style>
 
 
@@ -48,19 +60,18 @@
 <body>
 <div class="container" ng-controller="AppCtrl">
     <div class="header clearfix">
-        <nav>
+        <!--nav>
             <ul class="nav nav-pills pull-right">
                 <li role="presentation" class="active"><a href="#">Home</a></li>
                 <li role="presentation"><a href="#">About</a></li>
-                <li role="presentation"><a href="#">Contact</a></li>
             </ul>
-        </nav>
-        <h1>Coofluence</h1>
+        </nav-->
+        <div><img src="img/coofluence.png" alt="Coofluence logo"></div>
     </div>
 
 
     <div class="jumbotron">
-        <h1>Start searching confluence</h1>
+        <h1 ng-hide="results.content.length>0" class="animate-hide">Start searching confluence</h1>
 
         <div class='container-fluid typeahead-demo' ng-controller="TypeaheadCtrl">
             <div class="form-group">
@@ -73,9 +84,9 @@
     </div>
 
     <div class="row marketing coofluenceResults" ng_controller="ResultCtrl">
-        <div class="col-lg-12" ng-repeat="result in results">
+        <div class="col-lg-12" ng-repeat="result in results.content">
             <span class="pull-right">{{result.author}}</span>
-            <h4>{{result.title}}</h4>
+            <h4><a ng-href="{{result.link}}">{{result.title}}</a></h4>
 
             <p ng-bind-html="result.content | sanitize"></p>
         </div>
@@ -90,6 +101,7 @@
 <script src="bower_components/handlebars/handlebars.min.js"></script>
 
 <script src="bower_components/angular/angular.min.js"></script>
+<script src="bower_components/angular-animate/angular-animate.min.js"></script>
 <script src="bower_components/angular-resource/angular-resource.min.js"></script>
 <script src="bower_components/angular-route/angular-route.min.js"></script>
 <script src="bower_components/angular-bootstrap/ui-bootstrap.min.js"></script>

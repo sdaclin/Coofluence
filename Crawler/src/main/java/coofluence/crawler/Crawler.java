@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 public class Crawler {
@@ -23,6 +26,8 @@ public class Crawler {
     private String confluenceUserLogin;
     private String confluenceUserPass;
     private Integer nbPageMaxToCrawlDuringThisSession;
+
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public Crawler(String confluenceHttpRootUri) {
         this.confluenceHttpRootUri = confluenceHttpRootUri;
@@ -40,57 +45,73 @@ public class Crawler {
     }
 
     public void visit(LocalDateTime refreshDate, Function<Indexable, Void> function) {
-        logger.info("Start crawling from [{}]", refreshDate);
+        final LocalDateTime[] refreshDateHandler = new LocalDateTime[1];
+        refreshDateHandler[0] = refreshDate;
 
         // Authenticate
         if (confluenceUserLogin != null && confluenceUserPass != null) {
             authenticate();
         }
 
-        // Get list of pages
-        int currentPage = 0;
-        HttpResponse<JsonNode> jsonNodeHttpResponse = null;
-        JSONObject responseJsonBody;
-        do {
-            // Query current page
-            try {
-                jsonNodeHttpResponse = Unirest.get(confluenceHttpRootUri + "/rest/api/content/search")//
-                        .queryString("cql", "type not in (comment,attachment) and lastmodified>" + refreshDate.format(DateTimeFormatter.ISO_DATE) + " order by lastmodified asc")
-                        .queryString("expand", "body.view,metadata,space,version")//
-                        .queryString("start", currentPage * CONFULENCE_REST_QUERY_LIMIT)
-                        .queryString("limit", CONFULENCE_REST_QUERY_LIMIT)
-                        .asJson();
-            } catch (UnirestException e) {
-                e.printStackTrace();
-            }
+        Runnable indexerTask = new Runnable() {
+            @Override
+            public void run() {
+                LocalDateTime threadRefreshDate = refreshDateHandler[0];
+                logger.info("Start crawling batch from [{}]", threadRefreshDate);
 
-            assert jsonNodeHttpResponse != null;
-            responseJsonBody = jsonNodeHttpResponse.getBody().getObject();
-            Preconditions.checkState(responseJsonBody.get("size").equals(CONFULENCE_REST_QUERY_LIMIT), "The query limit should be the same that the returned one");
+                // Get list of pages
+                int currentPage = 0;
+                HttpResponse<JsonNode> jsonNodeHttpResponse = null;
+                JSONObject responseJsonBody;
+                do {
+                    // Query current page
+                    try {
+                        jsonNodeHttpResponse = Unirest.get(confluenceHttpRootUri + "/rest/api/content/search")//
+                                .queryString("cql", "type not in (comment,attachment) and lastmodified>" + threadRefreshDate.format(DateTimeFormatter.ISO_DATE) + " order by lastmodified asc")
+                                .queryString("expand", "body.view,metadata,space,version")//
+                                .queryString("start", currentPage * CONFULENCE_REST_QUERY_LIMIT)
+                                .queryString("limit", CONFULENCE_REST_QUERY_LIMIT)
+                                .asJson();
+                    } catch (UnirestException e) {
+                        e.printStackTrace();
+                    }
 
-            // Handle results
-            JSONArray results = (JSONArray) responseJsonBody.get("results");
-            for (int i = 0; i < results.length(); i++) {
-                JSONObject resultJson = results.getJSONObject(i);
-                final String type = (String) resultJson.get("type");
-                Preconditions.checkState(resultJson.get("status").equals("current"), "Only current status is handled for now [%s]", resultJson.get("status"));
-                Indexable toIndex;
-                switch (type) {
-                    case "page":
-                        toIndex = extractPageFromJSON(resultJson);
-                        break;
-                    case "blogpost":
-                        toIndex = extractBlogPostFromJSON(resultJson);
-                        break;
-                    default:
-                        logger.error("Content type not supported yet [{}]", type);
-                        continue;
-                }
-                function.apply(toIndex);
+                    assert jsonNodeHttpResponse != null;
+                    responseJsonBody = jsonNodeHttpResponse.getBody().getObject();
+                    //Preconditions.checkState(responseJsonBody.get("size").equals(CONFULENCE_REST_QUERY_LIMIT), "The query limit should be the same that the returned one");
+
+                    // Handle results
+                    JSONArray results = (JSONArray) responseJsonBody.get("results");
+                    for (int i = 0; i < results.length(); i++) {
+                        JSONObject resultJson = results.getJSONObject(i);
+                        final String type = (String) resultJson.get("type");
+                        Preconditions.checkState(resultJson.get("status").equals("current"), "Only current status is handled for now [%s]", resultJson.get("status"));
+                        Indexable toIndex;
+                        switch (type) {
+                            case "page":
+                                toIndex = extractPageFromJSON(resultJson);
+                                Preconditions.checkState(((Page) toIndex).getUpdateDate() != null);
+                                refreshDateHandler[0] = ((Page) toIndex).getUpdateDate();
+                                break;
+                            case "blogpost":
+                                toIndex = extractBlogPostFromJSON(resultJson);
+                                Preconditions.checkState(((BlogPost) toIndex).getUpdateDate() != null);
+                                refreshDateHandler[0] = ((BlogPost) toIndex).getUpdateDate();
+                                break;
+                            default:
+                                logger.error("Content type not supported yet [{}]", type);
+                                continue;
+                        }
+                        function.apply(toIndex);
+                    }
+                    currentPage++;
+                } while ((Integer) responseJsonBody.get("size") > 0
+                        && (nbPageMaxToCrawlDuringThisSession == null || currentPage < nbPageMaxToCrawlDuringThisSession));
+                logger.info("End of indexation batch");
             }
-            currentPage++;
-        } while (responseJsonBody.get("size").equals(CONFULENCE_REST_QUERY_LIMIT)
-                && (nbPageMaxToCrawlDuringThisSession == null || currentPage < nbPageMaxToCrawlDuringThisSession));
+        };
+        scheduler.scheduleWithFixedDelay(indexerTask, 0, 5, TimeUnit.SECONDS);
+
     }
 
     private Indexable extractPageFromJSON(JSONObject resultJson) {

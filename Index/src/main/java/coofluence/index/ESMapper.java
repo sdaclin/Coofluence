@@ -16,6 +16,7 @@ public class ESMapper {
 
     public static final String CONFIG_LAST_CHANGE_DATE = "lastChangeDate";
 
+    public static final String PAGE_ID = "id";
     public static final String PAGE_TITLE = "title";
     public static final String PAGE_UPDATE_DATE = "updateDate";
     public static final String PAGE_CONTENT = "content";
@@ -25,6 +26,7 @@ public class ESMapper {
     public static final String PAGE_AUTHOR_KEY = "authorKey";
     public static final String PAGE_SPACE = "space";
 
+    public static final String BLOG_POST_ID = "id";
     public static final String BLOG_POST_TITLE = "title";
     public static final String BLOG_POST_UPDATE_DATE = "updateDate";
     public static final String BLOG_POST_CONTENT = "content";
@@ -34,6 +36,7 @@ public class ESMapper {
     public static final String BLOG_POST_AUTHOR_KEY = "authorKey";
     public static final String BLOG_POST_SPACE = "space";
 
+    public static final String COMMENT_ID = "id";
     public static final String COMMENT_TITLE = "title";
     public static final String COMMENT_CONTENT = "content";
     public static final String COMMENT_UPDATE_DATE = "updateDate";
@@ -44,6 +47,7 @@ public class ESMapper {
     public static final String ES_PAGE_SUGGEST = "pageSuggest";
     public static final String ES_BLOG_POST_SUGGEST = "blogPostSuggest";
     public static final String ES_TAG_SUGGEST = "tagSuggest";
+
 
     public static ESConfig toConfig(GetResponse response) {
         final ESConfig esConfig = new ESConfig();

@@ -1,6 +1,7 @@
-var confluenceApp = angular.module('coofluenceApp', ['siyfion.sfTypeahead', 'ngResource'])
+var confluenceApp = angular.module('coofluenceApp', ['siyfion.sfTypeahead', 'ngResource', 'ngAnimate'])
     .controller('AppCtrl', function ($scope, $rootScope) {
         $scope.searchQuery = {};
+        $scope.results = [];
     })
     .controller('TypeaheadCtrl', function ($scope) {
         var pageSuggestions = new Bloodhound({
@@ -73,7 +74,7 @@ var confluenceApp = angular.module('coofluenceApp', ['siyfion.sfTypeahead', 'ngR
         $scope.$watch('searchQuery.withDelay', function (newVal) {
             console.log(newVal);
             if (newVal != null && newVal.length > 1) {
-                $scope.results = SearchEndpoint.search({q: $scope.searchQuery.withDelay});
+                $scope.results.content = SearchEndpoint.search({q: $scope.searchQuery.withDelay});
             }
         });
     });

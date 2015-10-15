@@ -38,7 +38,6 @@ public class Index {
     final static Logger logger = LoggerFactory.getLogger(Index.class);
     private static final String ES_IDX = "coofluence";
 
-    private static final String ES_TYPE_CONFIG = "config";
     private static final String ES_TYPE_PAGE = "page";
     private static final String ES_TYPE_BLOG_POST = "blogPost";
     private static final java.lang.String ES_TYPE_COMMENT = "comment";
@@ -136,24 +135,13 @@ public class Index {
                     .execute().actionGet();
 
             // Adding mapping configs
-            /*client.admin().indices().preparePutMapping(ES_IDX)
-                    .setType(ES_TYPE_CONFIG)
-                    .setSource(
-                            jsonBuilder()
-                                    .startObject()
-                                    .startObject(MAPPING_PROPERTIES)
-                                    .startObject(ESMapper.CONFIG_LAST_CHANGE_DATE)
-                                    .field("type", "date")
-                                    .field("index", "no")
-                                    .endObject()
-                                    .endObject()
-                    ).execute().actionGet();*/
             client.admin().indices().preparePutMapping(ES_IDX)
                     .setType(ES_TYPE_PAGE)
                     .setSource(
                             jsonBuilder()
                                     .startObject()
                                     .startObject(MAPPING_PROPERTIES)
+                                    .startObject(ESMapper.PAGE_ID).field("type", "string").endObject()
                                     .startObject(ESMapper.PAGE_TITLE).field("type", "string").field("analyzer", ANALYZER_HTML).endObject()
                                     .startObject(ESMapper.PAGE_UPDATE_DATE).field("type", "date").endObject()
                                     .startObject(ESMapper.PAGE_AUTHOR_USER_NAME).field("type", "string").endObject()
@@ -168,12 +156,6 @@ public class Index {
                                     .field("search_analyzer", ANALYZER_HTML)
                                     .field("payloads", true)
                                     .endObject()
-//                                    .startObject(ESMapper.ES_TAG_SUGGEST)
-//                                    .field("type", "completion")
-//                                    .field("index_analyzer", ANALYZER_HTML)
-//                                    .field("search_analyzer", ANALYZER_HTML)
-//                                    .field("payloads", true)
-//                                    .endObject()
                                     .endObject()
 
                     ).execute().actionGet();
@@ -183,6 +165,7 @@ public class Index {
                             jsonBuilder()
                                     .startObject()
                                     .startObject(MAPPING_PROPERTIES)
+                                    .startObject(ESMapper.BLOG_POST_ID).field("type", "string").endObject()
                                     .startObject(ESMapper.BLOG_POST_TITLE).field("type", "string").field("analyzer", ANALYZER_HTML).endObject()
                                     .startObject(ESMapper.BLOG_POST_UPDATE_DATE).field("type", "date").endObject()
                                     .startObject(ESMapper.BLOG_POST_AUTHOR_USER_NAME).field("type", "string").endObject()
@@ -197,12 +180,6 @@ public class Index {
                                     .field("search_analyzer", ANALYZER_HTML)
                                     .field("payloads", true)
                                     .endObject()
-//                                    .startObject(ESMapper.ES_TAG_SUGGEST)
-//                                    .field("type", "completion")
-//                                    .field("index_analyzer", ANALYZER_HTML)
-//                                    .field("search_analyzer", ANALYZER_HTML)
-//                                    .field("payloads", true)
-//                                    .endObject()
                                     .endObject()
 
                     ).execute().actionGet();
@@ -212,6 +189,7 @@ public class Index {
                             jsonBuilder()
                                     .startObject()
                                     .startObject(MAPPING_PROPERTIES)
+                                    .startObject(ESMapper.COMMENT_ID).field("type", "string").endObject()
                                     .startObject(ESMapper.COMMENT_TITLE).field("type", "string").field("analyzer", ANALYZER_HTML).endObject()
                                     .startObject(ESMapper.COMMENT_CONTENT).field("type", "string").field("analyzer", ANALYZER_HTML).endObject()
                                     .startObject(ESMapper.COMMENT_UPDATE_DATE).field("type", "date").endObject()
@@ -231,6 +209,7 @@ public class Index {
             final IndexResponse indexResponse = client.prepareIndex(ES_IDX, ES_TYPE_PAGE, page.getId())
                     .setSource(
                             jsonBuilder().startObject()
+                                    .field(ESMapper.PAGE_ID, page.getId())
                                     .field(ESMapper.PAGE_TITLE, page.getTitle())
                                     .field(ESMapper.PAGE_CONTENT, Jsoup.parse(page.getContent()).text())
                                     .field(ESMapper.PAGE_UPDATE_DATE, page.getUpdateDate())
@@ -258,6 +237,7 @@ public class Index {
             final IndexResponse indexResponse = client.prepareIndex(ES_IDX, ES_TYPE_BLOG_POST, blogPost.getId())
                     .setSource(
                             jsonBuilder().startObject()
+                                    .field(ESMapper.BLOG_POST_ID, blogPost.getId())
                                     .field(ESMapper.BLOG_POST_TITLE, blogPost.getTitle())
                                     .field(ESMapper.BLOG_POST_CONTENT, Jsoup.parse(blogPost.getContent()).text())
                                     .field(ESMapper.BLOG_POST_UPDATE_DATE, blogPost.getUpdateDate())
@@ -269,7 +249,7 @@ public class Index {
                                     .startObject(ESMapper.ES_BLOG_POST_SUGGEST)
                                     .field("input", blogPost.getTitle())
                                     .field("payload",
-                                            CoofluenceProperty.HTTP_ROOT_URI.getValue() + "/pages/viewpage.action?pageId=" + blogPost.getId())
+                                            CoofluenceProperty.HTTP_ROOT_URI.getValue() + CoofluenceProperty.HTTP_VIEW_PAGE_PATH.getValue() + blogPost.getId())
                                     .endObject()
                                     .endObject())
                     .execute().actionGet();
@@ -288,6 +268,7 @@ public class Index {
                     .setSource(
                             jsonBuilder().startArray("comments")
                                     .startObject()
+                                    .field(ESMapper.COMMENT_ID, comment.getId())
                                     .field(ESMapper.COMMENT_TITLE, comment.getTitle())
                                     .field(ESMapper.COMMENT_CONTENT, comment.getContent())
                                     .field(ESMapper.COMMENT_UPDATE_DATE, comment.getUpdateDate())
@@ -355,7 +336,7 @@ public class Index {
                         .field(ESMapper.PAGE_TITLE)
                         .field(ESMapper.PAGE_CONTENT))
                 .addHighlightedField(ESMapper.PAGE_CONTENT, CONTENT_PREVIEW_SIZE)
-                .addFields(ESMapper.PAGE_TITLE, ESMapper.PAGE_CONTENT, ESMapper.PAGE_AUTHOR_DISPLAY_NAME, ESMapper.PAGE_UPDATE_DATE)
+                .addFields(ESMapper.PAGE_ID, ESMapper.PAGE_TITLE, ESMapper.PAGE_CONTENT, ESMapper.PAGE_AUTHOR_DISPLAY_NAME, ESMapper.PAGE_UPDATE_DATE)
                 .setFrom(0)
                 .setSize(20)
                 .execute().actionGet();
@@ -373,6 +354,7 @@ public class Index {
                 }
             }
             results.add(new Result(
+                    CoofluenceProperty.HTTP_ROOT_URI.getValue() + CoofluenceProperty.HTTP_VIEW_PAGE_PATH.getValue() + searchHitFields.field(ESMapper.PAGE_ID).value(),
                     searchHitFields.field(ESMapper.PAGE_TITLE).value(),
                     searchHitFields.field(ESMapper.PAGE_AUTHOR_DISPLAY_NAME).value(),
                     content,

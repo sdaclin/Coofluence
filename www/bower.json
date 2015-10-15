@@ -21,6 +21,7 @@
     "angular-resource": "~1.4.7",
     "angular-route": "~1.4.7",
     "angular-typeahead": "~0.2.4",
-    "handlebars": "~4.0.3"
+    "handlebars": "~4.0.3",
+    "angular-animate": "~1.4.7"
   }
 }
