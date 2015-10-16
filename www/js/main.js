@@ -1,3 +1,5 @@
+const restEndpoint = '/rest';
+
 var confluenceApp = angular.module('coofluenceApp', ['ngResource', 'ui.bootstrap'])
     .controller('AppCtrl', function ($scope, $rootScope) {
         $scope.searchQuery = {};
@@ -5,7 +7,7 @@ var confluenceApp = angular.module('coofluenceApp', ['ngResource', 'ui.bootstrap
     })
     .controller('TypeaheadCtrl', function ($scope, $http) {
         $scope.getLocation = function (search) {
-            return $http.get('http://localhost:8080/rest/autoComplete', {
+            return $http.get(restEndpoint + '/autoComplete', {
                 params: {
                     type: 'page',
                     q: search
@@ -38,10 +40,10 @@ var confluenceApp = angular.module('coofluenceApp', ['ngResource', 'ui.bootstrap
 
 confluenceApp
     .factory('SearchEndpoint', ['$resource', function ($resource) {
-        return $resource('http://localhost:8080/rest/search', null, {search: {method: 'GET'}});
+        return $resource(restEndpoint + '/search', null, {search: {method: 'GET'}});
     }])
     .factory('SuggestEndpoint', ['$resource', function ($resource) {
-        return $resource('http://localhost:8080/rest/autoComplete', null, {suggest: {method: 'GET', isArray: true}});
+        return $resource(restEndpoint + '/autoComplete', null, {suggest: {method: 'GET', isArray: true}});
     }]);
 
 confluenceApp.filter("sanitize", ['$sce', function ($sce) {

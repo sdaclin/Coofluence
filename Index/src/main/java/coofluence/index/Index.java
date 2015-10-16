@@ -40,7 +40,6 @@ public class Index {
 
     private static final String ES_TYPE_PAGE = "page";
     private static final String ES_TYPE_BLOG_POST = "blogPost";
-    private static final java.lang.String ES_TYPE_COMMENT = "comment";
 
     private static final String MAPPING_PROPERTIES = "properties";
     private static final String ANALYZER_HTML = "htmlAnalyzer";
@@ -386,7 +385,11 @@ public class Index {
                     searchHitFields.field(ESMapper.ES_FIELD_TAGS).value(),
                     searchHitFields.field(ESMapper.ES_FIELD_SPACE).value()));
         }
-        SearchResultWrapper srw = new SearchResultWrapper(results, usualSearch.getTookInMillis(), usualSearch.getHits().maxScore(), usualSearch.getHits().totalHits());
+        SearchResultWrapper srw = new SearchResultWrapper(results, usualSearch.getTookInMillis(), isNaN(usualSearch.getHits().maxScore(), 0f), usualSearch.getHits().totalHits());
         return srw;
+    }
+
+    private static Float isNaN(Float floatToCheck, Float replacement) {
+        return floatToCheck.isNaN() ? replacement : floatToCheck;
     }
 }

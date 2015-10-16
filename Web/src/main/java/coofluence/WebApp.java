@@ -22,9 +22,10 @@ public class WebApp {
         Gson gson = new Gson();
 
         port(8080);
-//        externalStaticFileLocation("www");
-        enableCORS("*", "*", "*");
+        externalStaticFileLocation("www");
+        //enableCORS("*", "*", "*");
 
+        // Autocomplete endpoint
         get("/rest/autoComplete", "application/json", new Route() {
             @Override
             public Object handle(Request request, Response response) throws Exception {
@@ -39,6 +40,7 @@ public class WebApp {
             }
         }, gson::toJson);
 
+        // Search endpoint
         get("/rest/search", "application/json", new Route() {
 
             @Override
