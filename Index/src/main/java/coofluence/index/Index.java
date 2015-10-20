@@ -1,5 +1,6 @@
 package coofluence.index;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import coofluence.model.*;
 import coofluence.tools.CoofluenceProperty;
@@ -16,6 +17,9 @@ import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.range.date.InternalDateRange;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.search.suggest.Suggest;
 import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
@@ -32,6 +36,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
+import static java.time.temporal.ChronoField.DAY_OF_WEEK;
+import static java.time.temporal.ChronoUnit.DAYS;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class Index {
@@ -359,6 +365,10 @@ public class Index {
                         .field(ESMapper.ES_FIELD_HEADING_3).boost(1.5f)
                         .field(ESMapper.ES_FIELD_EMPHASIS).boost(1.5f))
                 .addHighlightedField(ESMapper.ES_FIELD_CONTENT, CONTENT_PREVIEW_SIZE)
+                .addAggregation(AggregationBuilders.dateRange("lastDay").field(ESMapper.ES_FIELD_UPDATE_DATE).addRange(ESMapper.ES_FIELD_UPDATE_DATE, LocalDateTime.now().minusDays(1L).truncatedTo(DAYS), LocalDateTime.now()))
+                .addAggregation(AggregationBuilders.dateRange("lastWeek").field(ESMapper.ES_FIELD_UPDATE_DATE).addRange(ESMapper.ES_FIELD_UPDATE_DATE, LocalDateTime.now().minusWeeks(1L).with(DAY_OF_WEEK, 1L).truncatedTo(DAYS), LocalDateTime.now()))
+                .addAggregation(AggregationBuilders.dateRange("lastMonth").field(ESMapper.ES_FIELD_UPDATE_DATE).addRange(ESMapper.ES_FIELD_UPDATE_DATE, LocalDateTime.now().minusMonths(1L).truncatedTo(DAYS), LocalDateTime.now()))
+                .addAggregation(AggregationBuilders.dateRange("lastYear").field(ESMapper.ES_FIELD_UPDATE_DATE).addRange(ESMapper.ES_FIELD_UPDATE_DATE, LocalDateTime.now().minusYears(1L).truncatedTo(DAYS), LocalDateTime.now()))
                 .addFields(ESMapper.ES_FIELD_ID, ESMapper.ES_FIELD_TITLE, ESMapper.ES_FIELD_CONTENT, ESMapper.ES_FIELD_AUTHOR_DISPLAY_NAME, ESMapper.ES_FIELD_UPDATE_DATE, ESMapper.ES_FIELD_TAGS, ESMapper.ES_FIELD_SPACE)
                 .setFrom(0)
                 .setSize(20)
@@ -385,7 +395,14 @@ public class Index {
                     searchHitFields.field(ESMapper.ES_FIELD_TAGS).value(),
                     searchHitFields.field(ESMapper.ES_FIELD_SPACE).value()));
         }
-        SearchResultWrapper srw = new SearchResultWrapper(results, usualSearch.getTookInMillis(), isNaN(usualSearch.getHits().maxScore(), 0f), usualSearch.getHits().totalHits());
+        List<AggregationResult> aggregationResults = new ArrayList<>();
+        for (Aggregation aggregation : usualSearch.getAggregations()) {
+            String name = aggregation.getName();
+            InternalDateRange timeAggregation = (InternalDateRange) aggregation;
+            Preconditions.checkState(timeAggregation.getBuckets().size() == 1, "Only one bucket time aggregation supported for the moment");
+            aggregationResults.add(new AggregationResult(name, timeAggregation.getBucketByKey(ESMapper.ES_FIELD_UPDATE_DATE).getDocCount()));
+        }
+        SearchResultWrapper srw = new SearchResultWrapper(results, aggregationResults, usualSearch.getTookInMillis(), isNaN(usualSearch.getHits().maxScore(), 0f), usualSearch.getHits().totalHits());
         return srw;
     }
 

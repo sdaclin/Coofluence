@@ -59,7 +59,7 @@
         <div class="jumbotron" ng-controller="TypeaheadCtrl">
             <h2>Start searching confluence</h2>
             <input type="text" ng-model="searchQuery.value" placeholder="Your search..."
-                   uib-typeahead="suggestion as suggestion.label for suggestion in getLocation($viewValue)"
+                   uib-typeahead="suggestion as suggestion.label for suggestion in searchResults($viewValue)"
                    typeahead-loading="loadingLocations" typeahead-wait-ms="250" class="form-control"
                    typeahead-template-url="customTemplate.html">
             <i ng-show="loadingLocations" class="glyphicon glyphicon-refresh"></i>
@@ -73,22 +73,36 @@
 
     <div class="row ng-cloak" ng-controller="ResultCtrl">
 
-        <div class="panel panel-default" ng-repeat="result in results.content.results">
-            <div class="panel-heading">
-                <div class="pull-right text-right text-info">{{result.author}}<br/>{{result.date | date : format : timezone}}</div>
-                <h4><a ng-href="{{result.link}}">{{result.title}}</a>
-                    <small>[{{result.space}}]</small>
-                </h4>
-            </div>
-            <div class="panel-body">
-                <div class="col-lg-12">
-                    <p class="searchResults" ng-bind-html="result.content | sanitize"></p>
+        <div class="col-lg-9">
+            <div class="panel panel-default" ng-repeat="result in results.content.results">
+                <div class="panel-heading">
+                    <div class="pull-right text-right text-info">{{result.author}}<br/>{{result.date | date : format : timezone}}</div>
+                    <h4><a ng-href="{{result.link}}">{{result.title}}</a>
+                        <small>[{{result.space}}]</small>
+                    </h4>
                 </div>
-                <div class="col-lg-12">
-                    <div class="pull-right">
-                        <p>
-                            <span ng-repeat="tag in result.tags"><span class="badge">{{tag}}</span> </span>
-                        </p>
+                <div class="panel-body">
+                    <div class="col-lg-12">
+                        <p class="searchResults" ng-bind-html="result.content | sanitize"></p>
+                    </div>
+                    <div class="col-lg-12">
+                        <div class="pull-right">
+                            <p>
+                                <span ng-repeat="tag in result.tags"><span class="badge">{{tag}}</span> </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3" ng-show="results.content.aggregationResults">
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h5>By Date</h5>
+                </div>
+                <div class="panel-body">
+                    <div ng-repeat="aggregation in results.content.aggregationResults">
+                        <p><a href="#">{{aggregation.name}} <span class="badge">{{aggregation.docCount}}</span></a></p>
                     </div>
                 </div>
             </div>

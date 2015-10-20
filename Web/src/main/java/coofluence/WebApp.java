@@ -18,12 +18,16 @@ import static spark.Spark.*;
 public class WebApp {
     final static Logger logger = LoggerFactory.getLogger(WebApp.class);
 
-    public static void start() {
+    public static void start(boolean serveHtml) {
         Gson gson = new Gson();
 
         port(8080);
-        externalStaticFileLocation("www");
-        //enableCORS("*", "*", "*");
+
+        if (serveHtml) {
+            externalStaticFileLocation("www");
+        } else {
+            enableCORS("*", "*", "*");
+        }
 
         // Autocomplete endpoint
         get("/rest/autoComplete", "application/json", new Route() {
