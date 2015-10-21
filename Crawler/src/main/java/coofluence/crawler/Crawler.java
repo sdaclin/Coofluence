@@ -22,6 +22,8 @@ import java.util.function.Function;
 public class Crawler {
     final static Logger logger = LoggerFactory.getLogger(Crawler.class);
     public static final Integer CONFULENCE_REST_QUERY_LIMIT = 50;
+    public static final String CONFLUENCE_REST_AUTH_OS_USERNAME = "os_username";
+    public static final String CONFLUENCE_REST_AUTH_OS_PASSWORD = "os_password";
 
     private final String confluenceHttpRootUri;
     private String confluenceUserLogin;
@@ -54,64 +56,61 @@ public class Crawler {
             authenticate();
         }
 
-        Runnable indexerTask = new Runnable() {
-            @Override
-            public void run() {
-                LocalDateTime threadRefreshDate = refreshDateHandler[0];
-                logger.info("Start crawling batch from [{}]", threadRefreshDate);
+        Runnable indexerTask = () -> {
+            LocalDateTime threadRefreshDate = refreshDateHandler[0];
+            logger.info("Start crawling batch from [{}]", threadRefreshDate);
 
-                // Get list of pages
-                int currentPage = 0;
-                HttpResponse<JsonNode> jsonNodeHttpResponse = null;
-                JSONObject responseJsonBody;
-                do {
-                    // Query current page
-                    try {
+            // Get list of pages
+            int currentPage = 0;
+            HttpResponse<JsonNode> jsonNodeHttpResponse = null;
+            JSONObject responseJsonBody;
+            do {
+                // Query current page
+                try {
 
-                        jsonNodeHttpResponse = Unirest.get(confluenceHttpRootUri + "/rest/api/content/search")//
-                                .queryString("cql", "type not in (comment,attachment) and lastmodified>\"" + threadRefreshDate.minusMinutes(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "\" order by lastmodified asc")
-                                .queryString("expand", "body.view,metadata,space,version")//
-                                .queryString("start", currentPage * CONFULENCE_REST_QUERY_LIMIT)
-                                .queryString("limit", CONFULENCE_REST_QUERY_LIMIT)
-                                .asJson();
-                    } catch (UnirestException e) {
-                        logger.error("Something goes wrong when querying confluence REST API [{}]", e.getMessage());
-                        return;
+                    jsonNodeHttpResponse = Unirest.get(confluenceHttpRootUri + "/rest/api/content/search")//
+                            .queryString("cql", "type not in (comment,attachment) and lastmodified>\"" + threadRefreshDate.minusMinutes(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) + "\" order by lastmodified asc")
+                            .queryString("expand", "body.view,metadata,space,version")//
+                            .queryString("start", currentPage * CONFULENCE_REST_QUERY_LIMIT)
+                            .queryString("limit", CONFULENCE_REST_QUERY_LIMIT)
+                            .asJson();
+                } catch (UnirestException e) {
+                    logger.error("Something goes wrong when querying confluence REST API [{}]", e.getMessage());
+                    return;
+                }
+
+                assert jsonNodeHttpResponse != null;
+                responseJsonBody = jsonNodeHttpResponse.getBody().getObject();
+                //Preconditions.checkState(responseJsonBody.get("size").equals(CONFULENCE_REST_QUERY_LIMIT), "The query limit should be the same that the returned one");
+
+                // Handle results
+                JSONArray results = (JSONArray) responseJsonBody.get("results");
+                for (int i = 0; i < results.length(); i++) {
+                    JSONObject resultJson = results.getJSONObject(i);
+                    final String type = (String) resultJson.get("type");
+                    Preconditions.checkState(resultJson.get("status").equals("current"), "Only current status is handled for now [%s]", resultJson.get("status"));
+                    Indexable toIndex;
+                    switch (type) {
+                        case "page":
+                            toIndex = extractPageFromJSON(resultJson);
+                            Preconditions.checkState(((Page) toIndex).getUpdateDate() != null);
+                            refreshDateHandler[0] = ((Page) toIndex).getUpdateDate();
+                            break;
+                        case "blogpost":
+                            toIndex = extractBlogPostFromJSON(resultJson);
+                            Preconditions.checkState(((BlogPost) toIndex).getUpdateDate() != null);
+                            refreshDateHandler[0] = ((BlogPost) toIndex).getUpdateDate();
+                            break;
+                        default:
+                            logger.error("Content type not supported yet [{}]", type);
+                            continue;
                     }
-
-                    assert jsonNodeHttpResponse != null;
-                    responseJsonBody = jsonNodeHttpResponse.getBody().getObject();
-                    //Preconditions.checkState(responseJsonBody.get("size").equals(CONFULENCE_REST_QUERY_LIMIT), "The query limit should be the same that the returned one");
-
-                    // Handle results
-                    JSONArray results = (JSONArray) responseJsonBody.get("results");
-                    for (int i = 0; i < results.length(); i++) {
-                        JSONObject resultJson = results.getJSONObject(i);
-                        final String type = (String) resultJson.get("type");
-                        Preconditions.checkState(resultJson.get("status").equals("current"), "Only current status is handled for now [%s]", resultJson.get("status"));
-                        Indexable toIndex;
-                        switch (type) {
-                            case "page":
-                                toIndex = extractPageFromJSON(resultJson);
-                                Preconditions.checkState(((Page) toIndex).getUpdateDate() != null);
-                                refreshDateHandler[0] = ((Page) toIndex).getUpdateDate();
-                                break;
-                            case "blogpost":
-                                toIndex = extractBlogPostFromJSON(resultJson);
-                                Preconditions.checkState(((BlogPost) toIndex).getUpdateDate() != null);
-                                refreshDateHandler[0] = ((BlogPost) toIndex).getUpdateDate();
-                                break;
-                            default:
-                                logger.error("Content type not supported yet [{}]", type);
-                                continue;
-                        }
-                        function.apply(toIndex);
-                    }
-                    currentPage++;
-                } while ((Integer) responseJsonBody.get("size") > 0
-                        && (nbPageMaxToCrawlDuringThisSession == null || currentPage < nbPageMaxToCrawlDuringThisSession));
-                logger.info("End of indexation batch");
-            }
+                    function.apply(toIndex);
+                }
+                currentPage++;
+            } while ((Integer) responseJsonBody.get("size") > 0
+                    && (nbPageMaxToCrawlDuringThisSession == null || currentPage < nbPageMaxToCrawlDuringThisSession));
+            logger.info("End of indexation batch");
         };
         scheduler.scheduleWithFixedDelay(indexerTask, 0, Long.valueOf(CoofluenceProperty.CONFLUENCE_POLLING_FREQUENCY_SECONDS.getValue()), TimeUnit.SECONDS);
 
@@ -207,8 +206,8 @@ public class Crawler {
     private void authenticate() {
         try {
             Unirest.get(confluenceHttpRootUri + "/rest/api/content")
-                    .queryString("os_username", confluenceUserLogin)
-                    .queryString("os_password", confluenceUserPass).asString();
+                    .queryString(CONFLUENCE_REST_AUTH_OS_USERNAME, confluenceUserLogin)
+                    .queryString(CONFLUENCE_REST_AUTH_OS_PASSWORD, confluenceUserPass).asString();
         } catch (UnirestException e) {
             e.printStackTrace();
         }

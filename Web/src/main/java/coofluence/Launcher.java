@@ -19,9 +19,11 @@ public class Launcher {
     public static final String CMD_LINE_CRAWLER_OFF = "crawlerOff";
     public static final String CMD_LINE_CRAWLER_START_DATE = "crawlerStartDate";
     public static final String CMD_LINE_HELP = "help";
+    public static final String CMD_LINE_USER_LOGIN = "confluenceApiRestLogin";
+    public static final String CMD_LINE_USER_PASS = "confluenceApiRestPassword";
     public static Logger logger = LoggerFactory.getLogger(Launcher.class);
 
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args) {
         // Handle startup options
         Options options = new Options();
         options.addOption(CMD_LINE_HELP, false, "Print CLI help");
@@ -29,14 +31,22 @@ public class Launcher {
         options.addOption(CMD_LINE_RECREATE_INDEX, "Drop and recreate index content");
         options.addOption(CMD_LINE_CRAWLER_OFF, "Start the crawler");
         options.addOption(CMD_LINE_CRAWLER_START_DATE, true, "The date from when the crawler crawls content. Use ISO Format as \"YYYY-MM-DDTHH:mm\"");
+        options.addOption(CMD_LINE_USER_LOGIN, true, "User login to be passed as [" + Crawler.CONFLUENCE_REST_AUTH_OS_USERNAME + "] query parameter during confluence rest api calls");
+        options.addOption(CMD_LINE_USER_PASS, true, "User password to be passed as [" + Crawler.CONFLUENCE_REST_AUTH_OS_PASSWORD + "] query parameter during confluence rest api calls");
 
         CommandLineParser parser = new DefaultParser();
-        final CommandLine cmdLine = parser.parse(options, args);
+        CommandLine cmdLine = null;
+        try {
+            cmdLine = parser.parse(options, args);
+        } catch (ParseException e) {
+            logger.error(e.getMessage());
+            printCmdLineHelp(options);
+            System.exit(-1);
+        }
 
         if (cmdLine.hasOption("help")) {
-            HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp("java -jar coofluence.jar", options);
-            System.exit(0);
+            printCmdLineHelp(options);
+            System.exit(-1);
         }
 
         // Start Elastic search index
@@ -61,7 +71,7 @@ public class Launcher {
             }
             //lastChangeDate = LocalDateTime.of(2015, Month.JANUARY,1,0,0);
             new Crawler(CoofluenceProperty.HTTP_ROOT_URI.getValue()) //
-                    .withCredentials(CoofluenceProperty.USER_LOGIN.getValue(), CoofluenceProperty.USER_PASS.getValue()) //
+                    .withCredentials(cmdLine.getOptionValue(CMD_LINE_USER_LOGIN), cmdLine.getOptionValue(CMD_LINE_USER_PASS)) //
                     .limitCrawlingTo(5)
                     .visit(lastChangeDate, indexable -> {
                         if (shouldFilter(indexable)) {
@@ -84,6 +94,7 @@ public class Launcher {
         }
 
         // For stand alone launch only. In an ide the console might be null
+        // Todo need to be handle properly
         Console console = System.console();
         if (console != null) {
             console.format("\nPress ENTER to quit.\n");
@@ -102,6 +113,11 @@ public class Launcher {
         }
     }
 
+    private static void printCmdLineHelp(Options options) {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("java -jar coofluence.jar", options);
+    }
+
     /**
      * Apply some basic rules to filter an indexable content
      *
@@ -109,9 +125,6 @@ public class Launcher {
      * @return
      */
     private static boolean shouldFilter(Indexable indexable) {
-        if (indexable.getAuthorUserName().equals("rd-tnd-writer")) {
-            return true;
-        }
-        return false;
+        return indexable.getAuthorUserName().equals("rd-tnd-writer");
     }
 }

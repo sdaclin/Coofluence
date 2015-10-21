@@ -10,9 +10,7 @@ import java.util.Properties;
 public enum CoofluenceProperty {
     HTTP_ROOT_URI,
     HTTP_VIEW_PAGE_PATH,
-    CONFLUENCE_POLLING_FREQUENCY_SECONDS,
-    USER_LOGIN,
-    USER_PASS;
+    CONFLUENCE_POLLING_FREQUENCY_SECONDS;
 
     final static Logger logger = LoggerFactory.getLogger(CoofluenceProperty.class);
     private static final String PATH = "coofluence.properties";
